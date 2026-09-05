@@ -1,3 +1,4 @@
+import { Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { invitationUrl } from "@/lib/wedding/message";
 import { qrDataUrl } from "@/lib/wedding/qr";
@@ -33,7 +34,12 @@ export function QrCard({ token, name }: { token: string; name: string }) {
         <div className="size-[220px] animate-pulse rounded-[var(--radius)] bg-paper" />
       )}
       <p className="max-w-[220px] truncate text-center text-xs text-subtle">{href}</p>
-      <button type="button" className="text-sm text-olive underline-offset-4 hover:underline" onClick={() => void share()}>
+      <button
+        type="button"
+        className="inline-flex items-center gap-1.5 text-sm text-olive underline-offset-4 hover:underline"
+        onClick={() => void share()}
+      >
+        <Share2 className="size-4" aria-hidden="true" />
         Descargar o compartir QR
       </button>
     </div>

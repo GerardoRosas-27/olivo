@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { CheckCircle2, Copy, DoorOpen, Eye, Pencil, Send, Users } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { coupleNames, formatWeddingDate } from "@/lib/wedding/message";
@@ -18,13 +20,13 @@ function AdminHome() {
     );
   }
   const { wedding, stats } = overview.data;
-  const items = [
-    { label: "Invitados", value: stats.guests },
-    { label: "Enviados", value: stats.sent },
-    { label: "Vistos", value: stats.viewed },
-    { label: "Confirmados", value: stats.confirmed },
-    { label: "En puerta", value: stats.checkedIn },
-    { label: "Clones", value: stats.clones },
+  const items: { label: string; value: number; icon: LucideIcon }[] = [
+    { label: "Invitados", value: stats.guests, icon: Users },
+    { label: "Enviados", value: stats.sent, icon: Send },
+    { label: "Vistos", value: stats.viewed, icon: Eye },
+    { label: "Confirmados", value: stats.confirmed, icon: CheckCircle2 },
+    { label: "En puerta", value: stats.checkedIn, icon: DoorOpen },
+    { label: "Clones", value: stats.clones, icon: Copy },
   ];
   return (
     <div className="space-y-6">
@@ -36,19 +38,33 @@ function AdminHome() {
         </p>
       </header>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-        {items.map((item) => (
-          <Card key={item.label}>
-            <p className="text-xs tracking-wide text-muted uppercase">{item.label}</p>
-            <p className="font-display mt-1 text-3xl tabular-nums">{item.value}</p>
-          </Card>
-        ))}
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Card key={item.label}>
+              <p className="inline-flex items-center gap-1.5 text-xs tracking-wide text-muted uppercase">
+                <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+                {item.label}
+              </p>
+              <p className="font-display mt-1 text-3xl tabular-nums">{item.value}</p>
+            </Card>
+          );
+        })}
       </div>
       <p className="text-sm text-muted">Aforo esperado: {stats.expected} personas.</p>
       <div className="flex flex-wrap gap-3">
-        <Link to="/admin/invitados" className="inline-flex h-11 items-center rounded-[var(--radius)] bg-primary px-4 text-sm text-primary-foreground">
+        <Link
+          to="/admin/invitados"
+          className="inline-flex h-11 items-center gap-2 rounded-[var(--radius)] bg-primary px-4 text-sm text-primary-foreground"
+        >
+          <Users className="size-4" aria-hidden="true" />
           Lista de invitados
         </Link>
-        <Link to="/admin/boda" className="inline-flex h-11 items-center rounded-[var(--radius)] border border-border px-4 text-sm">
+        <Link
+          to="/admin/boda"
+          className="inline-flex h-11 items-center gap-2 rounded-[var(--radius)] border border-border px-4 text-sm"
+        >
+          <Pencil className="size-4" aria-hidden="true" />
           Editar la boda
         </Link>
       </div>
