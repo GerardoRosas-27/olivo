@@ -66,6 +66,15 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   }
 }
 
+/** Ensure EMAIL_SERVER_URL is an absolute base (trim, no trailing slash, https if missing). */
+export function normalizeEmailServerBase(raw: string): string {
+  let base = raw.trim().replace(/\/+$/, "");
+  if (!/^https?:\/\//i.test(base)) {
+    base = `https://${base}`;
+  }
+  return base;
+}
+
 /**
  * Ask the Railway email-server to generate + email a NIP.
  * Returns the raw NIP for hashing in Olivo — never send it to the browser.
@@ -74,8 +83,8 @@ export async function sendNipViaEmailServer(opts: {
   email: string;
   userName: string;
 }): Promise<SendNipViaServerResult> {
-  const base = readEnv("EMAIL_SERVER_URL");
-  if (!base) {
+  const raw = readEnv("EMAIL_SERVER_URL");
+  if (!raw) {
     return {
       ok: false,
       error:
@@ -83,7 +92,7 @@ export async function sendNipViaEmailServer(opts: {
     };
   }
 
-  const url = `${base.replace(/\/+$/, "")}/send-nip`;
+  const url = `${normalizeEmailServerBase(raw)}/send-nip`;
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -129,10 +138,10 @@ export async function checkEmailServerHealth(): Promise<{
   ok: boolean;
   error?: string;
 }> {
-  const base = readEnv("EMAIL_SERVER_URL");
-  if (!base) return { ok: false, error: "EMAIL_SERVER_URL unset" };
+  const raw = readEnv("EMAIL_SERVER_URL");
+  if (!raw) return { ok: false, error: "EMAIL_SERVER_URL unset" };
   try {
-    const res = await fetch(`${base.replace(/\/+$/, "")}/health`);
+    const res = await fetch(`${normalizeEmailServerBase(raw)}/health`);
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     return { ok: true };
   } catch (err) {

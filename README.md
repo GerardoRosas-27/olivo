@@ -59,7 +59,7 @@ Para activar la prueba de 15 días + NIP:
 | Variable | Uso |
 | --- | --- |
 | `EMAIL_VERIFICATION_ENABLED` | `true` para activar TrialGate + UI de envío/confirmación de NIP. Default: `false`. |
-| `EMAIL_SERVER_URL` | Base URL del email-server en Railway, p.ej. `https://email-server-production.up.railway.app`. Obligatorio si la verificación está activada. |
+| `EMAIL_SERVER_URL` | Base URL absoluta del email-server en Railway, p.ej. `https://email-server-production-45a4.up.railway.app` (o `https://<email-server>.up.railway.app`). Incluye `https://`; si falta, Olivo lo antepone. Obligatorio si la verificación está activada. |
 
 Comportamiento con el flag en `true`:
 
