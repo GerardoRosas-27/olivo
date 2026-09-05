@@ -1,9 +1,17 @@
 import { Link, Outlet } from "@tanstack/react-router";
-import { ArrowLeft, Heart, LayoutDashboard, MessageCircle, QrCode, Users } from "lucide-react";
+import {
+  Heart,
+  LayoutDashboard,
+  MessageCircle,
+  QrCode,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import { RedirectToSignIn, SignInGate, UserButton } from "@/lib/auth/gates";
+import { TrialGate } from "@/lib/auth/trial-gate";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-import { GROK_PROVIDERS, signIn } from "@/lib/auth/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AdminShellLogin } from "@/components/admin-shell-login";
 
 const NAV = [
   { to: "/admin", label: "Resumen", icon: LayoutDashboard },
@@ -11,37 +19,13 @@ const NAV = [
   { to: "/admin/invitados", label: "Invitados", icon: Users },
   { to: "/admin/mensaje", label: "WhatsApp", icon: MessageCircle },
   { to: "/admin/escaner", label: "Escáner", icon: QrCode },
+  { to: "/admin/cuenta", label: "Cuenta", icon: ShieldCheck },
 ] as const;
 
 export function AdminShell() {
   const { isPending } = useCurrentUserState();
   return (
-    <SignInGate
-      fallback={
-        <main className="grid min-h-screen place-items-center bg-bg px-6 text-fg">
-          <div className="w-full max-w-sm space-y-4">
-            <p className="text-[11px] tracking-[0.28em] text-muted uppercase">Olivo</p>
-            <h1 className="font-display text-4xl italic">Entrar al panel</h1>
-            <div className="flex flex-col gap-2">
-              {GROK_PROVIDERS.map((p) => (
-                <button
-                  key={p.providerId}
-                  type="button"
-                  className="h-11 rounded-[var(--radius)] border border-border bg-surface"
-                  onClick={() => signIn(p.providerId, { callbackURL: "/admin" })}
-                >
-                  Continuar con {p.label}
-                </button>
-              ))}
-            </div>
-            <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-olive">
-              <ArrowLeft className="size-4" aria-hidden="true" />
-              Volver
-            </Link>
-          </div>
-        </main>
-      }
-    >
+    <SignInGate fallback={<AdminShellLogin />}>
       {isPending ? (
         <div className="min-h-screen bg-bg p-6">
           <Skeleton className="h-10 w-40" />
@@ -73,7 +57,10 @@ export function AdminShell() {
               </nav>
               <UserButton />
             </div>
-            <nav className="flex gap-3 overflow-x-auto px-4 pb-3 text-sm md:hidden" aria-label="Secciones del panel">
+            <nav
+              className="flex gap-3 overflow-x-auto px-4 pb-3 text-sm md:hidden"
+              aria-label="Secciones del panel"
+            >
               {NAV.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -82,7 +69,9 @@ export function AdminShell() {
                     to={item.to}
                     activeOptions={{ exact: item.to === "/admin" }}
                     className="inline-flex shrink-0 items-center gap-1.5 text-muted"
-                    activeProps={{ className: "inline-flex shrink-0 items-center gap-1.5 text-fg" }}
+                    activeProps={{
+                      className: "inline-flex shrink-0 items-center gap-1.5 text-fg",
+                    }}
                   >
                     <Icon className="size-4 shrink-0" aria-hidden="true" />
                     {item.label}
@@ -92,7 +81,9 @@ export function AdminShell() {
             </nav>
           </header>
           <div className="mx-auto max-w-5xl px-4 py-8">
-            <Outlet />
+            <TrialGate>
+              <Outlet />
+            </TrialGate>
           </div>
         </div>
       )}

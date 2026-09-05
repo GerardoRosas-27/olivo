@@ -1,7 +1,11 @@
-import { genericOAuthClient } from "better-auth/client/plugins";
+import { emailOTPClient, genericOAuthClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { runPreSignInSignOut, runSignOut } from "../../../scripts/sign-out-plan.mjs";
-import { GROK_PROVIDERS } from "./providers";
+import {
+  GROK_PROVIDERS,
+  resolveUiProviders,
+  type SignInProvider,
+} from "./providers";
 
 /**
  * Better Auth client for this React SPA (browser-side).
@@ -18,7 +22,7 @@ import { GROK_PROVIDERS } from "./providers";
  * the visitor stays signed in.
  */
 export const authClient = createAuthClient({
-  plugins: [genericOAuthClient()],
+  plugins: [genericOAuthClient(), emailOTPClient()],
   fetchOptions: {
     onRequest(ctx) {
       const token = getBearerToken();
@@ -37,8 +41,19 @@ export const authClient = createAuthClient({
  */
 export const authEnabled = import.meta.env.VITE_AUTH_ENABLED !== "false";
 
-/** The upstream providers to render sign-in buttons for. */
+export { emailOtpEnabled } from "./email-otp";
+
+/** The upstream providers to render sign-in buttons for (broker path). */
 export { GROK_PROVIDERS };
+
+/** Providers the login UI should render for this environment. */
+export function getSignInProviders(): readonly SignInProvider[] {
+  return resolveUiProviders({
+    livePreview: inLivePreview(),
+    preferBroker: import.meta.env.VITE_AUTH_BROKER === "true",
+    nativeSocial: import.meta.env.VITE_AUTH_SOCIAL === "true",
+  });
+}
 
 // ── Live-preview bearer token ────────────────────────────────────────────────
 // The embedded preview iframe has partitioned cookies, so we keep the session's
@@ -98,10 +113,14 @@ type PopupMessage = { source: "grok-auth-popup"; token: string | null; error?: s
  */
 export async function signIn(
   providerId: string,
-  opts: { callbackURL?: string; errorCallbackURL?: string } = {},
+  opts: { callbackURL?: string; errorCallbackURL?: string; kind?: SignInProvider["kind"] } = {},
 ): Promise<void> {
   const callbackURL = opts.callbackURL ?? "/";
   const errorCallbackURL = opts.errorCallbackURL ?? "/";
+  const kind =
+    opts.kind ??
+    getSignInProviders().find((p) => p.providerId === providerId)?.kind ??
+    (providerId.startsWith("grok-") ? "oauth2" : "social");
 
   // Open the popup SYNCHRONOUSLY on the user gesture — before any await
   // (including signOut). Awaiting first drops user-gesture privilege in some
@@ -140,6 +159,17 @@ export async function signIn(
         window.location.href = callbackURL;
       }
     }
+    return;
+  }
+
+  if (kind === "social") {
+    const { data, error } = await authClient.signIn.social({
+      provider: providerId as "google" | "twitter",
+      callbackURL,
+      errorCallbackURL,
+    });
+    if (error) throw new Error(error.message ?? "Sign-in failed");
+    if (data?.url) window.location.href = data.url;
     return;
   }
 
