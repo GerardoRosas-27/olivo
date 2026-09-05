@@ -19,7 +19,7 @@ export const getTrialStatus = createServerFn({ method: "GET" })
 
 export const sendVerificationNip = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .handler(async ({ context }): Promise<{ ok: true; delivered: "resend" | "console" }> => {
+  .handler(async ({ context }): Promise<{ ok: true; delivered: "email-server" }> => {
     const { sendVerificationNipForUser } = await import("./trial-actions.server");
     return sendVerificationNipForUser(context.userId);
   });

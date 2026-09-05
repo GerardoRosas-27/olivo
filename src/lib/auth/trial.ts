@@ -18,6 +18,11 @@ export type TrialStatus = {
   /** Full admin access: trial still active OR NIP/email verified. */
   hasAccess: boolean;
   locked: boolean;
+  /**
+   * Server flag EMAIL_VERIFICATION_ENABLED. When false, TrialGate never blocks
+   * and Cuenta hides send/confirm NIP UI.
+   */
+  verificationEnabled: boolean;
 };
 
 export function computeTrialAccess(opts: {
