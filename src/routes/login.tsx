@@ -2,11 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import {
   authEnabled,
-  emailOtpEnabled,
+  emailOnlyEnabled,
   getSignInProviders,
   signIn,
 } from "@/lib/auth/client";
-import { EmailOtpForm } from "@/lib/auth/email-otp-form";
+import { EmailOnlyForm } from "@/lib/auth/email-only-form";
 
 export const Route = createFileRoute("/login")({ component: Login });
 
@@ -19,10 +19,10 @@ function Login() {
         <h1 className="font-display text-4xl italic">Entrar al panel</h1>
         {authEnabled ? (
           <div className="flex flex-col gap-4">
-            {emailOtpEnabled ? <EmailOtpForm callbackURL="/admin" /> : null}
+            {emailOnlyEnabled ? <EmailOnlyForm callbackURL="/admin" /> : null}
             {providers.length > 0 ? (
               <div className="flex flex-col gap-2">
-                {emailOtpEnabled ? (
+                {emailOnlyEnabled ? (
                   <p className="text-center text-xs text-muted">o continúa con</p>
                 ) : null}
                 {providers.map((p) => (
@@ -38,7 +38,7 @@ function Login() {
                   </button>
                 ))}
               </div>
-            ) : emailOtpEnabled ? null : (
+            ) : emailOnlyEnabled ? null : (
               <p className="text-sm text-muted">
                 El acceso no está configurado en este deploy.
               </p>

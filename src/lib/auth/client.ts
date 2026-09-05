@@ -1,6 +1,7 @@
-import { emailOTPClient, genericOAuthClient } from "better-auth/client/plugins";
+import { genericOAuthClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { runPreSignInSignOut, runSignOut } from "../../../scripts/sign-out-plan.mjs";
+import { emailOnlyClient } from "./email-only-client";
 import {
   GROK_PROVIDERS,
   resolveUiProviders,
@@ -22,7 +23,7 @@ import {
  * the visitor stays signed in.
  */
 export const authClient = createAuthClient({
-  plugins: [genericOAuthClient(), emailOTPClient()],
+  plugins: [genericOAuthClient(), emailOnlyClient()],
   fetchOptions: {
     onRequest(ctx) {
       const token = getBearerToken();
@@ -41,7 +42,7 @@ export const authClient = createAuthClient({
  */
 export const authEnabled = import.meta.env.VITE_AUTH_ENABLED !== "false";
 
-export { emailOtpEnabled } from "./email-otp";
+export { emailOnlyEnabled } from "./email-only";
 
 /** The upstream providers to render sign-in buttons for (broker path). */
 export { GROK_PROVIDERS };
