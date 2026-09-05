@@ -1,15 +1,16 @@
 import { Link, Outlet } from "@tanstack/react-router";
+import { ArrowLeft, Heart, LayoutDashboard, MessageCircle, QrCode, Users } from "lucide-react";
 import { RedirectToSignIn, SignInGate, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { GROK_PROVIDERS, signIn } from "@/lib/auth/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const NAV = [
-  { to: "/admin", label: "Resumen" },
-  { to: "/admin/boda", label: "Boda" },
-  { to: "/admin/invitados", label: "Invitados" },
-  { to: "/admin/mensaje", label: "WhatsApp" },
-  { to: "/admin/escaner", label: "Escáner" },
+  { to: "/admin", label: "Resumen", icon: LayoutDashboard },
+  { to: "/admin/boda", label: "Boda", icon: Heart },
+  { to: "/admin/invitados", label: "Invitados", icon: Users },
+  { to: "/admin/mensaje", label: "WhatsApp", icon: MessageCircle },
+  { to: "/admin/escaner", label: "Escáner", icon: QrCode },
 ] as const;
 
 export function AdminShell() {
@@ -33,7 +34,8 @@ export function AdminShell() {
                 </button>
               ))}
             </div>
-            <Link to="/" className="block text-sm text-olive">
+            <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-olive">
+              <ArrowLeft className="size-4" aria-hidden="true" />
               Volver
             </Link>
           </div>
@@ -52,27 +54,41 @@ export function AdminShell() {
               <Link to="/" className="font-display text-2xl italic">
                 Olivo
               </Link>
-              <nav className="hidden gap-4 text-sm md:flex">
-                {NAV.map((item) => (
+              <nav className="hidden gap-4 text-sm md:flex" aria-label="Secciones del panel">
+                {NAV.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      activeOptions={{ exact: item.to === "/admin" }}
+                      className="inline-flex items-center gap-1.5 text-muted hover:text-fg"
+                      activeProps={{ className: "inline-flex items-center gap-1.5 text-fg" }}
+                    >
+                      <Icon className="size-4 shrink-0" aria-hidden="true" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+              <UserButton />
+            </div>
+            <nav className="flex gap-3 overflow-x-auto px-4 pb-3 text-sm md:hidden" aria-label="Secciones del panel">
+              {NAV.map((item) => {
+                const Icon = item.icon;
+                return (
                   <Link
                     key={item.to}
                     to={item.to}
                     activeOptions={{ exact: item.to === "/admin" }}
-                    className="text-muted hover:text-fg"
-                    activeProps={{ className: "text-fg" }}
+                    className="inline-flex shrink-0 items-center gap-1.5 text-muted"
+                    activeProps={{ className: "inline-flex shrink-0 items-center gap-1.5 text-fg" }}
                   >
+                    <Icon className="size-4 shrink-0" aria-hidden="true" />
                     {item.label}
                   </Link>
-                ))}
-              </nav>
-              <UserButton />
-            </div>
-            <nav className="flex gap-3 overflow-x-auto px-4 pb-3 text-sm md:hidden">
-              {NAV.map((item) => (
-                <Link key={item.to} to={item.to} className="shrink-0 text-muted" activeProps={{ className: "text-fg" }}>
-                  {item.label}
-                </Link>
-              ))}
+                );
+              })}
             </nav>
           </header>
           <div className="mx-auto max-w-5xl px-4 py-8">

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Field } from "@/components/field";
@@ -118,10 +119,12 @@ function WeddingPage() {
           variant="secondary"
           onClick={() => setForm({ ...form, schedule: [...form.schedule, { time: "", title: "", detail: "" }] })}
         >
+          <Plus aria-hidden="true" />
           Añadir momento
         </Button>
       </section>
       <Button type="submit" disabled={save.isPending}>
+        <Save aria-hidden="true" />
         Guardar
       </Button>
     </form>
