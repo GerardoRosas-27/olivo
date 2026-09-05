@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Mail, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getTrialStatus } from "@/lib/auth/trial.server";
+import { getTrialStatus } from "@/lib/auth/trial-actions";
 
 export const Route = createFileRoute("/admin/cuenta")({ component: AdminCuenta });
 
