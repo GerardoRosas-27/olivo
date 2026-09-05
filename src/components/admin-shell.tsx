@@ -8,7 +8,6 @@ import {
   Users,
 } from "lucide-react";
 import { RedirectToSignIn, SignInGate, UserButton } from "@/lib/auth/gates";
-import { TrialGate } from "@/lib/auth/trial-gate";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AdminShellLogin } from "@/components/admin-shell-login";
@@ -81,9 +80,7 @@ export function AdminShell() {
             </nav>
           </header>
           <div className="mx-auto max-w-5xl px-4 py-8">
-            <TrialGate>
-              <Outlet />
-            </TrialGate>
+            <Outlet />
           </div>
         </div>
       )}

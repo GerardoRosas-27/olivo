@@ -1,22 +1,22 @@
 /**
  * Self-hosted Better Auth for THIS app (server-only).
  *
- * Passwordless email OTP is the primary login path. Optional Google/X (native or
- * Grok broker) when credentials are set. Grok preview broker is never used once
- * DATABASE_URL is set (Railway).
+ * Temporary primary login: email-only (no OTP / Resend). Optional Google/X
+ * (native or Grok broker) when credentials are set. Grok preview broker is
+ * never used once DATABASE_URL is set (Railway).
  *
  * NEVER import this from client code — it pulls in `pg` + the preview secret +
  * server-only Better Auth internals. The client uses `@/lib/auth/client`.
  */
 import { betterAuth } from "better-auth";
-import { bearer, emailOTP, genericOAuth } from "better-auth/plugins";
+import { bearer, genericOAuth } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { ensureDbReady, getPglite } from "../db";
-import { sendOtpEmail } from "../email/send";
-import { emailOtpEnabled } from "./email-otp";
+import { emailOnlyEnabled } from "./email-only";
+import { emailOnlyPlugin } from "./email-only.plugin";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
 import { GROK_PROVIDERS } from "./providers";
 import { pgliteDialect } from "./pglite-dialect";
@@ -31,12 +31,9 @@ import {
   readEnv,
   resolvePublicOrigin,
 } from "./production-url";
-import {
-  ensureUserTrial,
-  forceEmailUnverifiedUnlessNip,
-} from "./trial-db.server";
+import { ensureUserTrial } from "./trial-db.server";
 
-// Kick (and share) PGLite bootstrap as soon as the auth server module loads.
+// Kick (and share) DB bootstrap + migrations as soon as the auth server module loads.
 void ensureDbReady();
 
 /**
@@ -96,10 +93,10 @@ const grokClientSecret = explicitBroker
     ? PREVIEW_CLIENT_SECRET
     : undefined;
 
-/** True when federated / social / email-OTP sign-in is active (real auth enforced). */
+/** True when federated / social / email-only sign-in is active (real auth enforced). */
 export const authConfigured =
   !authDisabled &&
-  (brokerActive || hasNativeSocial || emailOtpEnabled);
+  (brokerActive || hasNativeSocial || emailOnlyEnabled);
 
 // This app's own Better Auth origin. When deployed the deployer injects the
 // public URL. In the sandbox live preview there's no fixed URL (each preview gets
@@ -149,7 +146,7 @@ if (databaseUrl && !authDisabled) {
   }
   if (!authConfigured) {
     problems.push(
-      "No sign-in path: enable email OTP, or set GOOGLE_CLIENT_* / GROK_AUTH_*.",
+      "No sign-in path: enable email-only login, or set GOOGLE_CLIENT_* / GROK_AUTH_*.",
     );
   }
   for (const msg of problems) {
@@ -181,26 +178,6 @@ const grokOAuthPlugin = brokerActive && grokClientId && grokClientSecret
         scopes: ["openid", "profile", "email"],
         authorizationUrlParams: { idp, prompt: "login" },
       })),
-    })
-  : null;
-
-const emailOtpPlugin = emailOtpEnabled
-  ? emailOTP({
-      otpLength: 6,
-      expiresIn: 600,
-      storeOTP: "hashed",
-      // Login OTP proves mailbox control for sign-in only. Post-trial unlock uses
-      // a separate NIP in user_trials (see trial.server.ts).
-      async sendVerificationOTP({ email, otp, type }) {
-        if (type !== "sign-in") {
-          console.info(`[auth] ignoring email OTP type=${type} for ${email}`);
-          return;
-        }
-        const sent = await sendOtpEmail({ to: email, otp, purpose: "login" });
-        if (!sent.ok) {
-          console.error("[auth] login OTP email failed", sent.error);
-        }
-      },
     })
   : null;
 
@@ -249,27 +226,15 @@ export const auth = betterAuth({
 
   session: { cookieCache: { enabled: true, maxAge: 300 } },
 
-  // Better Auth emailOTP sets emailVerified=true on sign-in; we roll that back
-  // until the post-trial NIP confirms (user_trials.verified_at).
+  // Passive trial row for Cuenta informational UI — does NOT gate admin access.
   databaseHooks: {
     user: {
       create: {
         after: async (user) => {
           try {
             await ensureUserTrial(user.id);
-            await forceEmailUnverifiedUnlessNip(user.id);
           } catch (err) {
             console.error("[auth] trial bootstrap failed", err);
-          }
-        },
-      },
-      update: {
-        after: async (user) => {
-          try {
-            await ensureUserTrial(user.id);
-            await forceEmailUnverifiedUnlessNip(user.id);
-          } catch (err) {
-            console.error("[auth] trial sync failed", err);
           }
         },
       },
@@ -301,7 +266,7 @@ export const auth = betterAuth({
   plugins: [
     gateIdentitySessions(),
     ...(grokOAuthPlugin ? [grokOAuthPlugin] : []),
-    ...(emailOtpPlugin ? [emailOtpPlugin] : []),
+    ...(emailOnlyEnabled ? [emailOnlyPlugin()] : []),
     bearer(),
     tanstackStartCookies(),
   ],

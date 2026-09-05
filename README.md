@@ -12,7 +12,7 @@ Cada invitado recibe un enlace único con código QR. Desde el panel se arma la 
 - Lista de invitados, grupos y aforo
 - Escáner de puerta para check-in
 - Detección de enlaces compartidos o clonados
-- Acceso al panel solo con correo (sin contraseña), prueba de 15 días y verificación con NIP
+- Acceso al panel con correo (sin contraseña ni OTP por ahora)
 
 ## Stack
 
@@ -38,31 +38,25 @@ npm run typecheck
 
 ## Auth en producción (Railway)
 
-El acceso principal es **correo sin contraseña** (OTP / código de 6 dígitos). OAuth es opcional.
+El acceso principal es **correo sin contraseña** (validación local del formato). Sin OTP ni Resend por ahora. OAuth es opcional.
 
 ### Variables requeridas
 
 | Variable | Uso |
 | --- | --- |
-| `DATABASE_URL` | Postgres. Si falta, corre con PGLite. |
+| `DATABASE_URL` | Postgres. Si falta, PGLite. Migraciones también al arrancar (`ensureDbReady`). |
 | `BETTER_AUTH_SECRET` | Secreto de sesión (largo y aleatorio). |
 | `BETTER_AUTH_URL` | Origen público https, p.ej. `https://olivo-production.up.railway.app`. |
 | `VITE_AUTH_ENABLED` | `true` en el deploy (el cliente muestra el login). |
 
-### Correo (OTP de login + NIP de verificación)
-
-| Variable | Uso |
-| --- | --- |
-| `RESEND_API_KEY` | API key de Resend. Si falta, el servidor imprime el código/NIP en los logs. |
-| `EMAIL_FROM` | Remitente Resend, p.ej. `Olivo <noreply@tudominio.com>`. Default: `Olivo <onboarding@resend.dev>`. |
-
 ### Comportamiento
 
-1. En `/login` el usuario escribe su correo, recibe un código y entra.
-2. Cuentas nuevas: **15 días de prueba** (`user_trials`). `emailVerified` falso hasta el NIP.
-3. Con prueba activa o correo verificado: acceso completo al panel.
-4. Tras la prueba sin verificar: solo `/admin/cuenta` (enviar NIP + confirmar).
-5. Al confirmar NIP: `user_trials.verified_at` y `user.emailVerified = true`.
+1. En `/login` el usuario escribe su correo (validado en el cliente) y continúa.
+2. El servidor busca o crea el usuario, crea la sesión (cookie Better Auth) y redirige a `/admin`.
+3. No se bloquea el panel por NIP ni por fin de prueba. La pestaña **Cuenta** es informativa.
+4. Las migraciones corren en el build (`db:migrate`) y al arrancar vía `ensureDbReady`.
+
+`RESEND_API_KEY` / `EMAIL_FROM` no son necesarios en este flujo temporal.
 
 ### OAuth opcional
 

@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import {
-  emailOtpEnabled,
+  emailOnlyEnabled,
   getSignInProviders,
   signIn,
 } from "@/lib/auth/client";
-import { EmailOtpForm } from "@/lib/auth/email-otp-form";
+import { EmailOnlyForm } from "@/lib/auth/email-only-form";
 
 /** Signed-out fallback shared by the admin shell. */
 export function AdminShellLogin() {
@@ -16,10 +16,10 @@ export function AdminShellLogin() {
         <p className="text-[11px] tracking-[0.28em] text-muted uppercase">Olivo</p>
         <h1 className="font-display text-4xl italic">Entrar al panel</h1>
         <div className="flex flex-col gap-4">
-          {emailOtpEnabled ? <EmailOtpForm callbackURL="/admin" /> : null}
+          {emailOnlyEnabled ? <EmailOnlyForm callbackURL="/admin" /> : null}
           {providers.length > 0 ? (
             <div className="flex flex-col gap-2">
-              {emailOtpEnabled ? (
+              {emailOnlyEnabled ? (
                 <p className="text-center text-xs text-muted">o continúa con</p>
               ) : null}
               {providers.map((p) => (
