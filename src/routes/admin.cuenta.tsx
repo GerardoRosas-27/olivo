@@ -1,18 +1,49 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, type FormEvent } from "react";
 import { Mail, ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getTrialStatus } from "@/lib/auth/trial-actions";
+import {
+  confirmVerificationNip,
+  getTrialStatus,
+  sendVerificationNip,
+} from "@/lib/auth/trial-actions";
 
 export const Route = createFileRoute("/admin/cuenta")({ component: AdminCuenta });
 
-/**
- * Informational account page — trial days are passive; NIP / email verification
- * UI is hidden until a mail server is available. Access is never blocked.
- */
 function AdminCuenta() {
+  const queryClient = useQueryClient();
   const trial = useQuery({ queryKey: ["trial-status"], queryFn: () => getTrialStatus() });
+  const [nip, setNip] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const send = useMutation({
+    mutationFn: () => sendVerificationNip(),
+    onSuccess: () => {
+      setError(null);
+      setMessage("Te enviamos un NIP de 6 dígitos a tu correo.");
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(err instanceof Error ? err.message : "No se pudo enviar el NIP");
+    },
+  });
+
+  const confirm = useMutation({
+    mutationFn: () => confirmVerificationNip({ data: { nip } }),
+    onSuccess: async () => {
+      setError(null);
+      setMessage("Correo verificado. Ya puedes usar todo el panel.");
+      setNip("");
+      await queryClient.invalidateQueries({ queryKey: ["trial-status"] });
+    },
+    onError: (err) => {
+      setMessage(null);
+      setError(err instanceof Error ? err.message : "NIP incorrecto");
+    },
+  });
 
   if (trial.isPending || !trial.data) {
     return (
@@ -30,13 +61,67 @@ function AdminCuenta() {
     year: "numeric",
   });
 
+  // Flag off: informational only (current production behavior).
+  if (!status.verificationEnabled) {
+    return (
+      <div className="space-y-6">
+        <header>
+          <p className="text-[11px] tracking-[0.22em] text-muted uppercase">Cuenta</p>
+          <h1 className="font-display text-4xl italic">Tu cuenta</h1>
+          <p className="mt-1 text-sm text-muted">
+            {status.email ?? "Sin correo"} · acceso al panel
+          </p>
+        </header>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <Card>
+            <p className="inline-flex items-center gap-1.5 text-xs tracking-wide text-muted uppercase">
+              <ShieldCheck className="size-3.5" aria-hidden="true" />
+              Prueba
+            </p>
+            {status.trialActive ? (
+              <p className="mt-2 text-sm">
+                Prueba de 15 días: te quedan <strong>{status.daysRemaining}</strong> día
+                {status.daysRemaining === 1 ? "" : "s"} (hasta el {endsLabel}).
+              </p>
+            ) : (
+              <p className="mt-2 text-sm">
+                Periodo de prueba de referencia terminó el {endsLabel}. El panel sigue
+                disponible.
+              </p>
+            )}
+          </Card>
+          <Card>
+            <p className="inline-flex items-center gap-1.5 text-xs tracking-wide text-muted uppercase">
+              <Mail className="size-3.5" aria-hidden="true" />
+              Correo
+            </p>
+            <p className="mt-2 text-sm">
+              Entraste con correo. La verificación por NIP está desactivada en este
+              entorno.
+            </p>
+          </Card>
+        </div>
+
+        <Card>
+          <h2 className="font-medium">Verificación por correo desactivada</h2>
+          <p className="mt-1 text-sm text-muted">
+            Puedes usar todo el panel con tu correo. Para activar prueba + NIP,
+            configura <code className="text-xs">EMAIL_VERIFICATION_ENABLED=true</code> y
+            <code className="text-xs"> EMAIL_SERVER_URL</code> en Railway.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <header>
         <p className="text-[11px] tracking-[0.22em] text-muted uppercase">Cuenta</p>
-        <h1 className="font-display text-4xl italic">Tu cuenta</h1>
+        <h1 className="font-display text-4xl italic">Verificar correo</h1>
         <p className="mt-1 text-sm text-muted">
-          {status.email ?? "Sin correo"} · acceso al panel
+          {status.email ?? "Sin correo"} · prueba y verificación
         </p>
       </header>
 
@@ -46,36 +131,88 @@ function AdminCuenta() {
             <ShieldCheck className="size-3.5" aria-hidden="true" />
             Prueba
           </p>
-          {status.trialActive ? (
+          {status.nipVerified ? (
+            <p className="mt-2 text-sm">Cuenta verificada — la prueba ya no aplica.</p>
+          ) : status.trialActive ? (
             <p className="mt-2 text-sm">
-              Prueba de 15 días: te quedan <strong>{status.daysRemaining}</strong> día
+              Te quedan <strong>{status.daysRemaining}</strong> día
               {status.daysRemaining === 1 ? "" : "s"} (hasta el {endsLabel}).
             </p>
           ) : (
-            <p className="mt-2 text-sm">
-              Periodo de prueba de referencia terminó el {endsLabel}. El panel sigue
-              disponible.
+            <p className="mt-2 text-sm text-amber-800 dark:text-amber-200">
+              La prueba de 15 días terminó el {endsLabel}. Verifica tu correo para
+              continuar.
             </p>
           )}
         </Card>
         <Card>
           <p className="inline-flex items-center gap-1.5 text-xs tracking-wide text-muted uppercase">
             <Mail className="size-3.5" aria-hidden="true" />
-            Correo
+            Estado del correo
           </p>
           <p className="mt-2 text-sm">
-            Entraste con correo. La verificación por NIP llegará más adelante.
+            {status.nipVerified ? "Verificado" : "Pendiente de verificación con NIP"}
           </p>
         </Card>
       </div>
 
-      <Card>
-        <h2 className="font-medium">Verificación por correo próximamente</h2>
-        <p className="mt-1 text-sm text-muted">
-          Por ahora no enviamos códigos ni NIP (no hay servidor de correo
-          configurado). Puedes usar todo el panel con tu correo.
-        </p>
-      </Card>
+      {status.nipVerified ? (
+        <p className="text-sm text-olive">Todo listo. Tu cuenta tiene acceso completo.</p>
+      ) : (
+        <Card className="space-y-4">
+          <div>
+            <h2 className="font-medium">Verificar con NIP</h2>
+            <p className="mt-1 text-sm text-muted">
+              Te enviamos un código de 6 dígitos al correo de la cuenta. Caduca en
+              20 minutos.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={send.isPending}
+            onClick={() => {
+              setError(null);
+              setMessage(null);
+              send.mutate();
+            }}
+            className="inline-flex h-11 items-center gap-2 rounded-[var(--radius)] border border-border bg-olive px-4 text-sm text-white disabled:opacity-60"
+          >
+            <Mail className="size-4" aria-hidden="true" />
+            {send.isPending ? "Enviando…" : "Enviar NIP al correo"}
+          </button>
+          <form
+            className="flex flex-col gap-3 sm:flex-row sm:items-end"
+            onSubmit={(event: FormEvent) => {
+              event.preventDefault();
+              confirm.mutate();
+            }}
+          >
+            <label className="flex flex-1 flex-col gap-1 text-sm">
+              <span className="text-muted">NIP</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="\d{6}"
+                maxLength={6}
+                required
+                value={nip}
+                onChange={(e) => setNip(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="h-11 rounded-[var(--radius)] border border-border bg-surface px-3 tracking-[0.3em] tabular-nums"
+                placeholder="000000"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={confirm.isPending || nip.length !== 6}
+              className="h-11 rounded-[var(--radius)] border border-border px-4 text-sm disabled:opacity-60"
+            >
+              {confirm.isPending ? "Confirmando…" : "Confirmar NIP"}
+            </button>
+          </form>
+          {message ? <p className="text-sm text-olive">{message}</p> : null}
+          {error ? <p className="text-sm text-red-700 dark:text-red-400">{error}</p> : null}
+        </Card>
+      )}
     </div>
   );
 }

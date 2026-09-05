@@ -1,6 +1,10 @@
 /**
- * Minimal transactional email via Resend HTTP API (no SDK).
- * Without RESEND_API_KEY, logs the message (incl. NIP/OTP) for local/dev.
+ * Transactional email helpers.
+ *
+ * NIP verification uses the Railway email-server (`EMAIL_SERVER_URL`):
+ * the remote service generates the NIP and emails it; Olivo only hashes/stores it.
+ *
+ * Optional Resend path remains for generic/console delivery (local/dev).
  */
 
 import { readEnv } from "@/lib/auth/production-url";
@@ -14,6 +18,10 @@ export type SendEmailInput = {
 
 export type SendEmailResult =
   | { ok: true; mode: "resend" | "console" }
+  | { ok: false; error: string };
+
+export type SendNipViaServerResult =
+  | { ok: true; nip: string; mode: "email-server" }
   | { ok: false; error: string };
 
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
@@ -58,17 +66,79 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   }
 }
 
-export async function sendOtpEmail(opts: {
-  to: string;
-  otp: string;
-  purpose: "login" | "verify";
-}): Promise<SendEmailResult> {
-  const isLogin = opts.purpose === "login";
-  const subject = isLogin
-    ? "Tu código para entrar a Olivo"
-    : "Tu NIP para verificar el correo en Olivo";
-  const text = isLogin
-    ? `Tu código de acceso a Olivo es: ${opts.otp}\n\nCaduca en unos minutos. Si no pediste entrar, ignora este correo.`
-    : `Tu NIP de verificación de Olivo es: ${opts.otp}\n\nCaduca en 20 minutos. Si no pediste verificar tu cuenta, ignora este correo.`;
-  return sendEmail({ to: opts.to, subject, text });
+/**
+ * Ask the Railway email-server to generate + email a NIP.
+ * Returns the raw NIP for hashing in Olivo — never send it to the browser.
+ */
+export async function sendNipViaEmailServer(opts: {
+  email: string;
+  userName: string;
+}): Promise<SendNipViaServerResult> {
+  const base = readEnv("EMAIL_SERVER_URL");
+  if (!base) {
+    return {
+      ok: false,
+      error:
+        "EMAIL_SERVER_URL no está configurada. Configúrala en Railway o desactiva EMAIL_VERIFICATION_ENABLED.",
+    };
+  }
+
+  const url = `${base.replace(/\/+$/, "")}/send-nip`;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: opts.email,
+        userName: opts.userName,
+      }),
+    });
+    const body = (await res.json().catch(() => null)) as {
+      success?: boolean;
+      message?: string;
+      nip?: string;
+      email?: string;
+    } | null;
+
+    if (!res.ok) {
+      const msg =
+        body?.message ??
+        `El servidor de correo respondió HTTP ${res.status}`;
+      console.error("[email] email-server /send-nip error", res.status, body);
+      return { ok: false, error: msg };
+    }
+
+    if (!body?.success || typeof body.nip !== "string" || !body.nip.trim()) {
+      console.error("[email] email-server /send-nip missing nip", body);
+      return {
+        ok: false,
+        error: body?.message ?? "El servidor de correo no devolvió un NIP",
+      };
+    }
+
+    return { ok: true, nip: body.nip.trim(), mode: "email-server" };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[email] email-server /send-nip failed", message);
+    return { ok: false, error: message };
+  }
+}
+
+/** Optional health check against EMAIL_SERVER_URL/health. */
+export async function checkEmailServerHealth(): Promise<{
+  ok: boolean;
+  error?: string;
+}> {
+  const base = readEnv("EMAIL_SERVER_URL");
+  if (!base) return { ok: false, error: "EMAIL_SERVER_URL unset" };
+  try {
+    const res = await fetch(`${base.replace(/\/+$/, "")}/health`);
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
 }

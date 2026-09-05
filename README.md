@@ -12,7 +12,8 @@ Cada invitado recibe un enlace único con código QR. Desde el panel se arma la 
 - Lista de invitados, grupos y aforo
 - Escáner de puerta para check-in
 - Detección de enlaces compartidos o clonados
-- Acceso al panel con correo (sin contraseña ni OTP por ahora)
+- Acceso al panel con correo (sin contraseña)
+- Opcional: prueba de 15 días + verificación por NIP vía email-server
 
 ## Stack
 
@@ -38,25 +39,44 @@ npm run typecheck
 
 ## Auth en producción (Railway)
 
-El acceso principal es **correo sin contraseña** (validación local del formato). Sin OTP ni Resend por ahora. OAuth es opcional.
+El acceso principal es **correo sin contraseña** (validación local del formato). OAuth es opcional.
 
 ### Variables requeridas
 
 | Variable | Uso |
 | --- | --- |
 | `DATABASE_URL` | Postgres. Si falta, PGLite. Migraciones también al arrancar (`ensureDbReady`). |
-| `BETTER_AUTH_SECRET` | Secreto de sesión (largo y aleatorio). |
+| `BETTER_AUTH_SECRET` | Secreto de sesión (largo y aleatorio). También pepper del hash del NIP. |
 | `BETTER_AUTH_URL` | Origen público https, p.ej. `https://olivo-production.up.railway.app`. |
 | `VITE_AUTH_ENABLED` | `true` en el deploy (el cliente muestra el login). |
 
-### Comportamiento
+### Verificación por correo (opcional, flag)
 
-1. En `/login` el usuario escribe su correo (validado en el cliente) y continúa.
-2. El servidor busca o crea el usuario, crea la sesión (cookie Better Auth) y redirige a `/admin`.
-3. No se bloquea el panel por NIP ni por fin de prueba. La pestaña **Cuenta** es informativa.
-4. Las migraciones corren en el build (`db:migrate`) y al arrancar vía `ensureDbReady`.
+Por defecto **desactivada** (`EMAIL_VERIFICATION_ENABLED` unset o `false`): email-only login, sin bloqueo de TrialGate, Cuenta informativa, sin llamadas a `/send-nip`.
 
-`RESEND_API_KEY` / `EMAIL_FROM` no son necesarios en este flujo temporal.
+Para activar la prueba de 15 días + NIP:
+
+| Variable | Uso |
+| --- | --- |
+| `EMAIL_VERIFICATION_ENABLED` | `true` para activar TrialGate + UI de envío/confirmación de NIP. Default: `false`. |
+| `EMAIL_SERVER_URL` | Base URL del email-server en Railway, p.ej. `https://email-server-production.up.railway.app`. Obligatorio si la verificación está activada. |
+
+Comportamiento con el flag en `true`:
+
+1. En `/login` el usuario escribe su correo y continúa (sin contraseña).
+2. Nuevas cuentas reciben 15 días de prueba (`user_trials`).
+3. Mientras la prueba esté activa **o** el correo esté verificado: acceso completo al admin.
+4. Tras la prueba sin verificar: solo `/admin/cuenta` (enviar NIP + confirmar).
+5. **Enviar NIP**: Olivo hace `POST ${EMAIL_SERVER_URL}/send-nip` con `{ email, userName }`. El email-server **genera** el NIP y lo envía; Olivo toma `nip` de la respuesta, lo hashea y lo guarda (~20 min). El NIP crudo **nunca** vuelve al navegador.
+6. **Confirmar NIP**: el usuario escribe el código en Cuenta → se marca verificado.
+
+Health del email-server: `GET ${EMAIL_SERVER_URL}/health`.
+
+El cliente lee `verificationEnabled` desde el RPC `getTrialStatus` (un solo env de servidor; no hace falta flag Vite).
+
+**Desactivar / volver al modo sin verificación:** quita `EMAIL_VERIFICATION_ENABLED` o ponla en `false` y redespliega. No hace falta quitar `EMAIL_SERVER_URL`.
+
+`RESEND_API_KEY` / `EMAIL_FROM` no son necesarios para el flujo NIP (usa el email-server).
 
 ### OAuth opcional
 
