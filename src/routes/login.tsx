@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import { GROK_PROVIDERS, authEnabled, signIn } from "@/lib/auth/client";
 
 export const Route = createFileRoute("/login")({ component: Login });
@@ -25,7 +26,8 @@ function Login() {
         ) : (
           <p className="text-sm text-muted">El acceso está desactivado.</p>
         )}
-        <Link to="/" className="block text-sm text-olive">
+        <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-olive">
+          <ArrowLeft className="size-4" aria-hidden="true" />
           Volver
         </Link>
       </div>

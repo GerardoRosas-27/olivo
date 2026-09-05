@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { WhatsAppIcon } from "@/components/whatsapp-icon";
@@ -68,6 +68,7 @@ function MessagePage() {
           <Textarea rows={14} value={template} onChange={(e) => setTemplate(e.target.value)} />
           <div className="flex flex-wrap gap-2">
             <Button type="button" onClick={() => save.mutate(template)} disabled={save.isPending || !weddingQuery.data}>
+              <Save aria-hidden="true" />
               Guardar texto
             </Button>
             <Button
@@ -79,7 +80,7 @@ function MessagePage() {
                 save.mutate(DEFAULT_TEMPLATE);
               }}
             >
-              <RotateCcw />
+              <RotateCcw aria-hidden="true" />
               Restaurar plantilla
             </Button>
           </div>

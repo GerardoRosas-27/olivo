@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import { Check, MapPin, X } from "lucide-react";
 import { submitRsvp } from "@/lib/wedding/server";
 import { coupleNames, formatWeddingDate } from "@/lib/wedding/message";
 import { deviceId } from "@/lib/wedding/qr";
@@ -27,7 +28,7 @@ export function GuestLanding({ token, view }: { token: string; view: InvitationV
         {date}
         {wedding.weddingTime ? ` · ${wedding.weddingTime}` : ""}
       </p>
-      <p className="mt-1 text-center text-sm">{wedding.venueName}</p>
+      <p className="text-center text-sm">{wedding.venueName}</p>
       <p className="text-center text-sm text-subtle">{wedding.venueAddress}</p>
 
       <section className="mt-8 rounded-[var(--radius-lg)] border border-border bg-surface p-5">
@@ -37,18 +38,20 @@ export function GuestLanding({ token, view }: { token: string; view: InvitationV
           <div className="mt-4 grid grid-cols-2 gap-2">
             <button
               type="button"
-              className="h-11 rounded-[var(--radius)] bg-primary text-primary-foreground"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] bg-primary text-primary-foreground"
               onClick={() => rsvp.mutate("yes")}
               disabled={rsvp.isPending}
             >
+              <Check className="size-4" aria-hidden="true" />
               Confirmar
             </button>
             <button
               type="button"
-              className="h-11 rounded-[var(--radius)] border border-border"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border border-border"
               onClick={() => rsvp.mutate("no")}
               disabled={rsvp.isPending}
             >
+              <X className="size-4" aria-hidden="true" />
               No podré
             </button>
           </div>
@@ -94,7 +97,13 @@ export function GuestLanding({ token, view }: { token: string; view: InvitationV
 
       {wedding.venueMapsUrl ? (
         <p className="mt-8 text-center">
-          <a href={wedding.venueMapsUrl} className="text-olive underline-offset-4 hover:underline" target="_blank" rel="noreferrer">
+          <a
+            href={wedding.venueMapsUrl}
+            className="inline-flex items-center gap-1.5 text-olive underline-offset-4 hover:underline"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <MapPin className="size-4" aria-hidden="true" />
             Cómo llegar
           </a>
         </p>

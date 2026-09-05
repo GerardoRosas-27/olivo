@@ -1,3 +1,4 @@
+import { ScanLine } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
 import { tokenFromScan } from "@/lib/wedding/qr";
@@ -74,7 +75,11 @@ export function DoorScanner({ onToken }: { onToken: (token: string) => void }) {
           value={manual}
           onChange={(e) => setManual(e.target.value)}
         />
-        <button type="submit" className="h-11 rounded-[var(--radius)] bg-primary px-4 text-sm text-primary-foreground">
+        <button
+          type="submit"
+          className="inline-flex h-11 items-center gap-2 rounded-[var(--radius)] bg-primary px-4 text-sm text-primary-foreground"
+        >
+          <ScanLine className="size-4" aria-hidden="true" />
           Leer
         </button>
       </form>

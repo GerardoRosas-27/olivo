@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Ban, CheckCircle2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { DoorScanner } from "@/components/door-scanner";
@@ -69,6 +70,7 @@ function ScannerPage() {
                     discardGuest({ data: { id: last.guest!.id } }).then(() => toast.success("QR descartado"))
                   }
                 >
+                  <Ban aria-hidden="true" />
                   Descartar clon
                 </Button>
                 <Button
@@ -77,6 +79,7 @@ function ScannerPage() {
                     markAttendance({ data: { id: last.guest!.id } }).then(() => toast.success("Asistencia marcada"))
                   }
                 >
+                  <CheckCircle2 aria-hidden="true" />
                   Pasar de todos modos
                 </Button>
               </div>

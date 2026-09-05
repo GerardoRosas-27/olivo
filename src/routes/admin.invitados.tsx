@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Ban, Pencil, Plus, QrCode, RefreshCw, Save, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Field } from "@/components/field";
@@ -85,7 +86,17 @@ function GuestsPage() {
         </Field>
         <div className="flex items-end gap-2">
           <Button type="submit" disabled={save.isPending}>
-            {editing ? "Guardar cambios" : "Añadir"}
+            {editing ? (
+              <>
+                <Save aria-hidden="true" />
+                Guardar cambios
+              </>
+            ) : (
+              <>
+                <Plus aria-hidden="true" />
+                Añadir
+              </>
+            )}
           </Button>
           {editing ? (
             <Button
@@ -96,6 +107,7 @@ function GuestsPage() {
                 setForm(emptyForm);
               }}
             >
+              <X aria-hidden="true" />
               Cancelar
             </Button>
           ) : null}
@@ -119,7 +131,8 @@ function GuestsPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge>{guestState(guest)}</Badge>
-                  <Button size="sm" variant="secondary" onClick={() => setQrGuest(guest)}>
+                  <Button size="sm" variant="secondary" onClick={() => setQrGuest(guest)} aria-label={`Ver QR de ${guest.name}`}>
+                    <QrCode aria-hidden="true" />
                     QR
                   </Button>
                   {guest.phone ? (
@@ -153,6 +166,7 @@ function GuestsPage() {
                       });
                     }}
                   >
+                    <Pencil aria-hidden="true" />
                     Editar
                   </Button>
                 </div>
@@ -179,6 +193,7 @@ function GuestsPage() {
                     })
                   }
                 >
+                  <RefreshCw aria-hidden="true" />
                   Regenerar
                 </Button>
                 <Button
@@ -191,6 +206,7 @@ function GuestsPage() {
                     })
                   }
                 >
+                  <Ban aria-hidden="true" />
                   Descartar
                 </Button>
               </div>

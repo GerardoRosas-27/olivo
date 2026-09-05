@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Eye, LayoutDashboard } from "lucide-react";
 import { UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 
@@ -11,7 +12,11 @@ function Home() {
       <header className="mx-auto flex max-w-5xl items-center justify-between px-5 py-5">
         <p className="font-display text-2xl italic">Olivo</p>
         <div className="flex items-center gap-3">
-          <Link to="/admin" className="h-11 rounded-[var(--radius)] bg-primary px-4 text-sm leading-[2.75rem] text-primary-foreground">
+          <Link
+            to="/admin"
+            className="inline-flex h-11 items-center gap-2 rounded-[var(--radius)] bg-primary px-4 text-sm text-primary-foreground"
+          >
+            <LayoutDashboard className="size-4" aria-hidden="true" />
             Panel
           </Link>
           {isPending ? <div className="size-8 animate-pulse rounded-full bg-border" /> : user ? <UserButton /> : null}
@@ -29,10 +34,19 @@ function Home() {
             descarta.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/admin" className="inline-flex h-11 items-center rounded-[var(--radius)] bg-primary px-5 text-sm text-primary-foreground">
+            <Link
+              to="/admin"
+              className="inline-flex h-11 items-center gap-2 rounded-[var(--radius)] bg-primary px-5 text-sm text-primary-foreground"
+            >
+              <LayoutDashboard className="size-4" aria-hidden="true" />
               Abrir panel
             </Link>
-            <Link to="/i/$token" params={{ token: "demo-ana" }} className="inline-flex h-11 items-center rounded-[var(--radius)] border border-border px-5 text-sm">
+            <Link
+              to="/i/$token"
+              params={{ token: "demo-ana" }}
+              className="inline-flex h-11 items-center gap-2 rounded-[var(--radius)] border border-border px-5 text-sm"
+            >
+              <Eye className="size-4" aria-hidden="true" />
               Ver invitación de muestra
             </Link>
           </div>
